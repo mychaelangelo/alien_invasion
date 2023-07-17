@@ -1,0 +1,9 @@
+
+# Ignore macOS hidden directly structure file
+.DS_Store
+
+# Ignore files in pycache directly
+__pycache__
+
+# Ignore the virtual environment ("venv") folder and its contents
+venv/
