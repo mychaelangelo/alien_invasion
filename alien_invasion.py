@@ -5,10 +5,13 @@ import pygame
 
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
+from button import Button
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
 from star import Star
+from option_field import OptionField
 from random import randint
 
 
@@ -18,17 +21,22 @@ class AlienInvasion:
     def __init__(self):
         """Initialize game, and create game resources."""
         pygame.init()
+
+
         self.clock = pygame.time.Clock()
         self.settings = Settings()
 
+
+        
         # Create dispaly window with set resolution as class attribute.
         self.screen =pygame.display.set_mode(
             (self.settings.screen_width, self.settings.screen_height)
         )
         pygame.display.set_caption("Alien Invasion")
 
-        # Create instance to store game statistics.
+        # Create instance to store game statistics and with scoreboard
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)
 
         self.ship = Ship(self)
 
@@ -40,8 +48,17 @@ class AlienInvasion:
         self._create_fleet()
         self._create_constellation()
 
-        # Start Alien Invasion in an active state.
-        self.game_active = True
+        # Start Alien Invasion in an inactive state.
+        self.game_active = False
+
+        # Make the Play button
+        self.play_button = Button(self, "Play")
+
+        # Make selection field for speed
+        options = ["Normal", "Medium", "Fast"]
+        placeholder = "Select Alien Speed"
+        self.speed_dropdown = OptionField(self, 500, 450, options, placeholder)
+
     
 
     def run_game(self):
@@ -131,8 +148,49 @@ class AlienInvasion:
                 self._check_keydown_events(event)     
             elif event.type == pygame.KEYUP:
                 self._check_keyup_events(event) 
+            
+            # mouse events
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                # check play button
+                self._check_play_button(mouse_pos)
+                
+                # check option field button
+                self.speed_dropdown.handle_event(event)
 
+    def _check_play_button(self, mouse_pos):
+        """Start a new game when player clicks Play"""
+        button_clicked = self.play_button.rect.collidepoint(mouse_pos) 
+        if button_clicked and not self.game_active:
+            self._start_game()
 
+    def _start_game(self):
+        # Reset game stats
+        self.stats.reset_stats()
+
+        # Set speed difficulty
+        if self.speed_dropdown.selected_option:
+            if self.speed_dropdown.selected_option == "Normal":
+                self.settings.alien_speed = 1.0
+            elif self.speed_dropdown.selected_option == "Medium":
+                self.settings.alien_speed = 1.5
+            elif self.speed_dropdown.selected_option == "Fast":
+                self.settings.alien_speed = 2.0   
+
+        # Set game to be active
+        self.game_active = True
+
+        # Remove any remaining bullets and aliens.
+        self.bullets.empty()
+        self.aliens.empty()
+
+        # Create new fleet and center the ship.
+        self._create_fleet()
+        self.ship.center_ship()
+
+        # Hide the mouse cursor.
+        pygame.mouse.set_visible(False)      
+    
     def _check_keydown_events(self, event):
         """Respond to key presses."""
         if event.key == pygame.K_RIGHT:
@@ -147,6 +205,9 @@ class AlienInvasion:
             self._fire_bullet()
         elif event.key == pygame.K_q:
             sys.exit()
+        elif (event.key == pygame.K_p) and not (self.game_active):
+            self._start_game()
+
 
     def _check_keyup_events(self, event):
         """Respond to key releases."""
@@ -189,6 +250,7 @@ class AlienInvasion:
             # Destroy existing bullets and create new fleet
             self.bullets.empty() # empty() removes all sprites from group
             self._create_fleet()
+            self.settings.increase_speed()
 
         
     
@@ -215,6 +277,18 @@ class AlienInvasion:
             bullet.draw_bullet()
         
         self.aliens.draw(self.screen)
+
+        # Draw score info
+        self.sb.show_score()
+
+        # Draw the play button if the game is inactive.
+        if not self.game_active:
+            # play button
+            self.play_button.draw_button()
+
+            #draw alien speed dropdown
+            self.speed_dropdown.draw_button()
+
         self.ship.blitme()
 
 
@@ -238,6 +312,7 @@ class AlienInvasion:
             sleep(0.5)
         else:
             self.game_active = False
+            pygame.mouse.set_visible(True)
     
     def _check_aliens_bottom(self):
         """Checks if aliens have reached bottom of screen."""
