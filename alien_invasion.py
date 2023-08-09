@@ -1,5 +1,6 @@
 import sys
 from time import sleep
+from pathlib import Path
 
 import pygame
 
@@ -138,6 +139,7 @@ class AlienInvasion:
         for event in pygame.event.get():
             # to quit
             if event.type == pygame.QUIT:
+                self._save_max_score() # function to save max score to file.
                 sys.exit()
             
             # keyboard events
@@ -334,6 +336,13 @@ class AlienInvasion:
                 # Treat this the same as if ship got hit.
                 self._ship_hit()
                 break
+
+    
+    def _save_max_score(self):
+        """Saves latest max score to a file."""
+        latest_top_score = self.sb.stats.high_score
+        path = Path('max_scores.txt')
+        path.write_text(str(latest_top_score))
 
 
 if __name__ == '__main__':

@@ -7,3 +7,6 @@ __pycache__
 
 # Ignore the virtual environment ("venv") folder and its contents
 venv/
+
+# Ignore max_scores.txt
+max_scores.txt
