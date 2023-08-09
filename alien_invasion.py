@@ -22,12 +22,9 @@ class AlienInvasion:
         """Initialize game, and create game resources."""
         pygame.init()
 
-
         self.clock = pygame.time.Clock()
         self.settings = Settings()
 
-
-        
         # Create dispaly window with set resolution as class attribute.
         self.screen =pygame.display.set_mode(
             (self.settings.screen_width, self.settings.screen_height)
@@ -167,6 +164,9 @@ class AlienInvasion:
     def _start_game(self):
         # Reset game stats
         self.stats.reset_stats()
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
 
         # Set speed difficulty
         if self.speed_dropdown.selected_option:
@@ -245,12 +245,23 @@ class AlienInvasion:
         collisions = pygame.sprite.groupcollide(
             self.bullets, self.aliens, True, True
         )
+
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score += self.settings.alien_points * len(aliens)
+            self.sb.prep_score()
+            self.sb.check_high_score()
+
         
         if not self.aliens:
             # Destroy existing bullets and create new fleet
             self.bullets.empty() # empty() removes all sprites from group
             self._create_fleet()
             self.settings.increase_speed()
+
+            # Increase level
+            self.stats.level += 1
+            self.sb.prep_level()
 
         
     
@@ -298,7 +309,9 @@ class AlienInvasion:
     def _ship_hit(self):
         """Respond to ship being hit by an alien."""
         if self.stats.ships_left > 0:
+            # Decrement ships_left and update scoreboard.
             self.stats.ships_left -= 1
+            self.sb.prep_ships()
 
             # Get rid of any remaining bullets and aliens.
             self.bullets.empty()
